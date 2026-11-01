@@ -50,6 +50,12 @@ def parse_args(arguments: str) -> dict[str, Any]:
     return parsed if isinstance(parsed, dict) else {}
 
 
+def succeeded(output: str) -> bool:
+    """A tool call counts only if the tool returned a result, not an error."""
+    parsed = parse_args(output)
+    return bool(parsed) and "error" not in parsed
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model")
@@ -74,11 +80,14 @@ def main() -> int:
 
         bot = Agent(client, store, model, settings.reasoning_effort, fixed)
         replies: list[str] = []
-        calls: list[tuple[int, str, dict[str, Any]]] = []
+        calls: list[tuple[int, str, dict[str, Any], bool]] = []
         for i, text in enumerate(case.turns):
             turn = bot.reply(text)
             replies.append(turn.reply)
-            calls += [(i, c.name, parse_args(c.arguments)) for c in turn.tool_calls]
+            calls += [
+                (i, c.name, parse_args(c.arguments), succeeded(c.output))
+                for c in turn.tool_calls
+            ]
             returned.add(turn.model)
         result = grade(case, replies, calls)
         results.append(
@@ -87,6 +96,9 @@ def main() -> int:
                 "passed": result.passed,
                 "failures": list(result.failures),
                 "fallback": any(t.fallback for t in bot.turns),
+                # raw inputs to the grader, so a result can be re-graded later
+                "replies": replies,
+                "tool_calls": [list(c) for c in calls],
                 "transcript_md": to_markdown(bot.turns, case.id),
             }
         )
@@ -112,6 +124,8 @@ def main() -> int:
             "rules": sha256(Path(rules.__file__)),
             "loader": sha256(Path(data.__file__)),
             "cleaner": sha256(Path(clean.__file__)),
+            "grader": sha256(ROOT / "evals" / "grade.py"),
+            "runner": sha256(Path(__file__)),
         },
         "git_rev": git("rev-parse", "--short", "HEAD"),
         "git_dirty": bool(git("status", "--porcelain", "--untracked-files=no")),

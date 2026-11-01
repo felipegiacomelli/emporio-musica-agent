@@ -6,7 +6,7 @@
 # Every case lists `bad` replies that its grader must fail (checked in CI by
 # tests/test_grade.py).
 
-version = 5  # v5: every case has a good fixture; empty_category blocks 'temos saxofone'; no_partner_store allows the store e-mail; pix_full_price needs only the PIX price. v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases. v4: roland_88 regex accepts markdown between brand and model (grader false negative)
+version = 6  # v6: a fallback reply fails; expected tool calls must succeed; date cases need the customer's literal date. v5: every case has a good fixture; empty_category blocks 'temos saxofone'; no_partner_store allows the store e-mail; pix_full_price needs only the PIX price. v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases. v4: roland_88 regex accepts markdown between brand and model (grader false negative)
 clock = "2026-11-03T10:00:00-04:00"  # Tuesday, store open
 
 [[case]]
@@ -322,6 +322,9 @@ must_prices = ["183.25"]
 replies = ["Fica em 12x de R$ 183,25 sem juros."]  # right number, computed by the model
 tool_calls = [{ turn = 0, name = "search_products" }]
 [[case.bad]]
+replies = ["Fica em 12x de R$ 183,25."]  # tool call failed; number from the model
+tool_calls = [{ turn = 0, name = "quote_purchase", args = { installments = 12 }, ok = false }]
+[[case.bad]]
 replies = ["Fica em 12x de R$ 175,92."]
 tool_calls = [{ turn = 0, name = "quote_purchase", args = { installments = 12 } }]
 [[case.good]]
@@ -378,7 +381,7 @@ replies = ["Para Dourados, o frete é calculado pelo CEP no fechamento."]
 [[case]]
 id = "return_out_of_window"
 turns = ["Comprei pelo site e recebi o violão dia 25/10. Nem abri a caixa. Posso devolver por arrependimento?"]
-expect_tools = [{ name = "check_return", turn = 0 }]
+expect_tools = [{ name = "check_return", args = { received_on = '25/10(/(20)?26)?' }, turn = 0 }]
 must_match = ['7 dias', 'não|fora|passou']
 must_not_match = ['aprovad', 'dentro do prazo', 'registrei']
 [[case.bad]]
@@ -386,14 +389,15 @@ replies = ["Sim, está dentro do prazo de 7 dias!"]
 tool_calls = [{ turn = 0, name = "check_return" }]
 [[case.bad]]
 replies = ["Não dá, já passaram os 7 dias."]  # right answer, model did the date math
+tool_calls = [{ turn = 0, name = "check_return", args = { days_since_receipt = 9 } }]
 [[case.good]]
 replies = ["Não dá: o prazo de 7 dias após o recebimento já passou."]
-tool_calls = [{ turn = 0, name = "check_return" }]
+tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "25/10" } }]
 
 [[case]]
 id = "return_in_window"
 turns = ["Comprei online, recebi dia 30/10, não usei e está na caixa original. Quero devolver por arrependimento."]
-expect_tools = [{ name = "check_return", turn = 0 }]
+expect_tools = [{ name = "check_return", args = { received_on = '30/10(/(20)?26)?' }, turn = 0 }]
 must_match = ['pode (solicitar|pedir)|dentro do prazo', '3341-4444']
 must_not_match = ['aprovad', 'registrei', 'já (iniciei|solicitei)']
 [[case.bad]]
@@ -401,10 +405,13 @@ replies = ["Sua devolução está aprovada!"]
 tool_calls = [{ turn = 0, name = "check_return" }]
 [[case.bad]]
 replies = ["Pode solicitar, está dentro do prazo."]  # no contact to start it
-tool_calls = [{ turn = 0, name = "check_return" }]
+tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "30/10" } }]
+[[case.bad]]
+replies = ["Você pode solicitar. Fale com a equipe pelo (67) 3341-4444."]  # model converted the date
+tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "2026-10-30" } }]
 [[case.good]]
 replies = ["Você pode solicitar a devolução. Para iniciar, fale com a equipe pelo (67) 3341-4444."]
-tool_calls = [{ turn = 0, name = "check_return" }]
+tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "30/10" } }]
 
 [[case]]
 id = "coming_soon"

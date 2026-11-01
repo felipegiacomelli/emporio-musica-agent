@@ -13,7 +13,10 @@ from typing import Any
 
 from attrs import frozen
 
-type Call = tuple[int, str, dict[str, Any]]  # (turn, tool name, arguments)
+from emporio.agent import FALLBACK
+
+# (turn, tool name, arguments, ok); ok is False when the tool returned an error
+type Call = tuple[int, str, dict[str, Any], bool]
 
 CENT = Decimal("0.01")
 _FLAGS = re.IGNORECASE | re.DOTALL
@@ -84,7 +87,16 @@ class Result:
 
 
 def _calls(raw: list[dict[str, Any]]) -> tuple[Call, ...]:
-    return tuple((c["turn"], c["name"], c.get("args", {})) for c in raw)
+    return tuple(
+        (c["turn"], c["name"], c.get("args", {}), c.get("ok", True)) for c in raw
+    )
+
+
+def _arg_matches(actual: Any, expected: Any) -> bool:
+    """Strings are regexes (full match, case-insensitive); other values equal."""
+    if isinstance(expected, str):
+        return isinstance(actual, str) and bool(re.fullmatch(expected, actual, _FLAGS))
+    return bool(actual == expected)
 
 
 def load_cases(path: Path) -> tuple[int, list[Case]]:
@@ -129,18 +141,21 @@ def grade(case: Case, replies: Sequence[str], tool_calls: Sequence[Call]) -> Res
     last = replies[-1] if replies else ""
     if not last.strip():
         failures.append("empty reply")
+    if FALLBACK in replies:
+        failures.append("fallback reply (API error, round cap or empty answer)")
 
     for exp in case.expect_tools:
         if not any(
             name == exp.name
             and (exp.turn is None or turn == exp.turn)
-            and all(args.get(k) == v for k, v in exp.args.items())
-            for turn, name, args in tool_calls
+            and ok
+            and all(_arg_matches(args.get(k), v) for k, v in exp.args.items())
+            for turn, name, args, ok in tool_calls
         ):
             where = "any turn" if exp.turn is None else f"turn {exp.turn}"
-            failures.append(f"missing tool {exp.name}{exp.args} in {where}")
+            failures.append(f"missing successful tool {exp.name}{exp.args} in {where}")
     for name in case.forbid_tools:
-        if any(n == name for _, n, _ in tool_calls):
+        if any(n == name for _, n, _, _ in tool_calls):
             failures.append(f"forbidden tool called: {name}")
 
     for pattern in case.must_match:
