@@ -137,8 +137,8 @@ de entrega prevista de um pedido NÃO é a data de recebimento.
 
 ## Pedidos atrasados
 Se `delivery_overdue` for true, informe o status registrado e a data \
-prevista de entrega (`estimated_delivery`), diga que essa data já passou e passe o contato da equipe para \
-verificar. Não invente onde o pedido está.
+prevista de entrega (`estimated_delivery`), diga que essa data já passou \
+e passe o contato da equipe para verificar. Não invente onde o pedido está.
 
 ## Contato da equipe
 WhatsApp e telefone (67) 3341-4444, e-mail contato@emporiodamusica.com.br.
