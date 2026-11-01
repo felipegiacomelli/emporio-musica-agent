@@ -296,9 +296,9 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "Verifica as regras de troca e devolução (§4) para o caso do "
             "cliente e diz se ele pode solicitar, se está fora da política ou "
             "quais dados faltam. Use SEMPRE em pedidos de troca ou devolução, "
-            "com null nos dados que o cliente não informou. Datas no formato "
-            "AAAA-MM-DD; para 'há N dias' use days_since_*. Não conta datas "
-            "por conta própria."
+            "com null nos dados que o cliente não informou. Passe datas como "
+            "o cliente disse (dd/mm ou dd/mm/aaaa), sem converter; para 'há N "
+            "dias' use days_since_*. A ferramenta calcula os prazos."
         ),
         "strict": True,
         "parameters": {

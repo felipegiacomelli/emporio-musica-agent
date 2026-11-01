@@ -66,8 +66,9 @@ confirma o valor.
 - Total de mais de um item, parcelas, frete ou PIX de um pedido: chame \
 `quote_purchase` (use os `product_id` de `search_products`).
 - Troca ou devolução: chame `check_return` com os fatos que o cliente deu e \
-null no resto. Converta datas ditas pelo cliente para AAAA-MM-DD usando a \
-data de hoje (abaixo); para "há N dias", use os campos days_since_*.
+null no resto. Passe datas exatamente como o cliente disse (por exemplo \
+25/10); para "há N dias", use os campos days_since_*. Se o cliente der uma \
+data vaga ("semana passada"), pergunte o dia.
 
 ## Quando usar ferramentas
 - Preço, estoque, promoção ou disponibilidade: SEMPRE chame `search_products` \
