@@ -104,3 +104,13 @@ def test_invalid_setting_is_not_reported_as_missing_key(
     err = capsys.readouterr().err
     assert err.startswith("Configuração inválida: reasoning_effort:")
     assert "OPENAI_API_KEY não configurada" not in err
+
+
+def test_transcript_write_error_is_reported(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "missing-dir" / "t.md"
+    code = main(["--transcript", str(path)], agent=StubAgent(), input_fn=inputs("oi"))
+    captured = capsys.readouterr()
+    assert code == 0 and "Até mais! 🎸" in captured.out
+    assert "Não foi possível salvar a conversa" in captured.err

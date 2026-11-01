@@ -64,9 +64,12 @@ def main(
         pass
     finally:
         if args.transcript:
-            args.transcript.write_text(
-                to_markdown(agent.turns, TITLE), encoding="utf-8"
-            )
+            try:
+                args.transcript.write_text(
+                    to_markdown(agent.turns, TITLE), encoding="utf-8"
+                )
+            except OSError as exc:
+                print(f"Não foi possível salvar a conversa: {exc}", file=sys.stderr)
     print("\nAté mais! 🎸")
     return 0
 
