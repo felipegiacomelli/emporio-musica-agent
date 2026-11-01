@@ -119,7 +119,7 @@ def test_rejected_lookup_leaks_nothing() -> None:
     for oid, contact in [(8, "lucas.mendes@jmail.com"), (999, "x@y.z")]:
         args = json.dumps({"order_id": oid, "email_or_phone": contact})
         out = run_tool(STORE, "get_order", args, TODAY)
-        assert json.loads(out) == {"error": NOT_FOUND}
+        assert json.loads(out) == {"found": False, "message": NOT_FOUND}
         for leak in ["Ana", "349.9", "BRJL5544332BR", "Kala", "shipped"]:
             assert leak not in out
 

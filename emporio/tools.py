@@ -162,9 +162,10 @@ def _contact_matches(order: Order, contact: str) -> bool:
 def get_order(store: Store, args: OrderArgs, today: date) -> dict[str, Any]:
     order = store.orders.get(args.order_id)
     if order is None or not _contact_matches(order, args.email_or_phone):
-        return {"error": NOT_FOUND}
+        return {"found": False, "message": NOT_FOUND}
     eta = order.estimated_delivery
     return {
+        "found": True,
         "order_id": order.id,
         "customer_first_name": order.customer.name.split()[0],
         "status": order.status,
