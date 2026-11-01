@@ -25,11 +25,14 @@ def message(text: str) -> SimpleNamespace:
         output=[SimpleNamespace(type="message", content=text)],
         output_text=text,
         model="fake-model",
+        status="completed",
     )
 
 
 def calls(*items: SimpleNamespace) -> SimpleNamespace:
-    return SimpleNamespace(output=list(items), output_text="", model="fake-model")
+    return SimpleNamespace(
+        output=list(items), output_text="", model="fake-model", status="completed"
+    )
 
 
 class FakeClient:
@@ -122,6 +125,14 @@ def test_api_error_returns_fallback_and_history_stays_valid() -> None:
 def test_empty_answer_returns_fallback() -> None:
     a, _ = agent([message("")])
     assert a.reply("oi").fallback
+
+
+def test_incomplete_response_returns_fallback() -> None:
+    truncated = message("O GD20 custa R$ 2.1")
+    truncated.status = "incomplete"
+    a, _ = agent([truncated])
+    turn = a.reply("preço?")
+    assert turn.reply == FALLBACK and turn.fallback
 
 
 def test_bad_tool_args_go_back_to_model() -> None:

@@ -76,6 +76,8 @@ class Agent:
                     reasoning={"effort": self.reasoning_effort},
                 )
                 model = response.model
+                if response.status == "incomplete":
+                    break  # truncated answer: fall back instead of sending it
                 self._input.extend(response.output)
                 pending = [o for o in response.output if o.type == "function_call"]
                 if not pending:
