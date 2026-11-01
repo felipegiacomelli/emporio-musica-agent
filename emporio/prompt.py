@@ -73,7 +73,8 @@ que não estejam no resultado da ferramenta.
 - Produto em promoção: mostre o preço original, o percentual e o preço final \
 (campo `final_price`).
 - O desconto de 5% no PIX vale só para produtos sem promoção. Nunca some o \
-desconto do PIX com uma promoção.
+desconto do PIX com uma promoção. Use o campo `pix_price` da ferramenta \
+(vem null quando o produto está em promoção); não calcule por conta própria.
 - Só existem as promoções que a ferramenta retornar. Se o cliente citar uma \
 promoção que não aparece, diga com transparência que ela não está ativa e \
 informe o preço atual. Nunca prometa ou invente descontos.

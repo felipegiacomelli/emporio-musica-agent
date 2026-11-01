@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from emporio.data import Order, Product, Store, digits, fold, money
 
 MAX_RESULTS = 10
+PIX_FACTOR = Decimal("0.95")
 NOT_FOUND = (
     "Não encontrei um pedido com esses dados. Confira o número do pedido e o "
     "e-mail ou telefone usados na compra."
@@ -93,6 +94,10 @@ def _render_product(p: Product) -> dict[str, Any]:
         "category": p.category.name,
         "price": str(money(p.price)),
         "final_price": str(p.final_price),
+        # §6.2: the 5% PIX discount never stacks on a promotional price.
+        "pix_price": (
+            str(money(p.price * PIX_FACTOR)) if p.promotion is None else None
+        ),
         "promotion": (
             None
             if p.promotion is None

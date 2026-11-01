@@ -63,7 +63,10 @@ def test_promo_rendering() -> None:
     r = one(query="Ohana CK-20")
     assert r["price"] == "549.00" and r["final_price"] == "439.20"
     assert r["promotion"] == {"percent": 20, "name": "Desconto Exclusivo"}
-    assert one(query="Takamine GD20")["promotion"] is None
+    assert r["pix_price"] is None  # §6.2: PIX never stacks on a promotion
+    gd20 = one(query="Takamine GD20")
+    assert gd20["promotion"] is None and gd20["pix_price"] == "2089.05"
+    assert one(query="Yamaha C40")["pix_price"] == "569.91"  # 569.905 rounds up
 
 
 def test_max_price_uses_final_price() -> None:
