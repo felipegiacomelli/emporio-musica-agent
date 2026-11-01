@@ -10,7 +10,7 @@ BY_ID = {c.id: c for c in CASES}
 
 
 def test_case_set_shape() -> None:
-    assert VERSION == 4 and len(CASES) == 31
+    assert VERSION == 5 and len(CASES) == 31
     assert len(BY_ID) == len(CASES)  # unique ids
 
 
@@ -22,6 +22,13 @@ def test_case_set_shape() -> None:
 def test_grader_rejects_bad_fixture(case: Case, index: int) -> None:
     bad = case.bad[index]
     assert not grade(case, bad.replies, bad.tool_calls).passed
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: c.id)
+def test_grader_accepts_good_fixture(case: Case) -> None:
+    for good in case.good:
+        result = grade(case, good.replies, good.tool_calls)
+        assert result.passed, result.failures
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.id)

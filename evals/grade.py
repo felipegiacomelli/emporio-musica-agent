@@ -55,7 +55,7 @@ class ExpectedTool:
 
 
 @frozen
-class Bad:
+class Fixture:
     replies: tuple[str, ...]
     tool_calls: tuple[Call, ...]
 
@@ -72,7 +72,8 @@ class Case:
     must_not_match_turns: dict[int, tuple[str, ...]]
     must_prices: tuple[Decimal, ...]
     must_not_prices: tuple[Decimal, ...]
-    bad: tuple[Bad, ...]
+    bad: tuple[Fixture, ...]
+    good: tuple[Fixture, ...]
 
 
 @frozen
@@ -107,14 +108,18 @@ def load_cases(path: Path) -> tuple[int, list[Case]]:
             must_prices=tuple(Decimal(p) for p in c.get("must_prices", [])),
             must_not_prices=tuple(Decimal(p) for p in c.get("must_not_prices", [])),
             bad=tuple(
-                Bad(tuple(b["replies"]), _calls(b.get("tool_calls", [])))
+                Fixture(tuple(b["replies"]), _calls(b.get("tool_calls", [])))
                 for b in c["bad"]
+            ),
+            good=tuple(
+                Fixture(tuple(g["replies"]), _calls(g.get("tool_calls", [])))
+                for g in c.get("good", [])
             ),
         )
         if not (case.must_match or case.must_prices or case.expect_tools):
             raise ValueError(f"{case.id}: needs at least one positive check")
-        if not case.bad:
-            raise ValueError(f"{case.id}: needs at least one bad fixture")
+        if not case.bad or not case.good:
+            raise ValueError(f"{case.id}: needs a good and a bad fixture")
         cases.append(case)
     return data["version"], cases
 
