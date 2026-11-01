@@ -26,12 +26,20 @@ def main(
     if agent is None:
         try:
             settings = Settings()
-        except ValidationError:
-            print(
-                "OPENAI_API_KEY não configurada. "
-                "Copie .env.example para .env e preencha a chave.",
-                file=sys.stderr,
-            )
+        except ValidationError as exc:
+            for err in exc.errors():
+                if err["loc"] == ("openai_api_key",) and err["type"] == "missing":
+                    print(
+                        "OPENAI_API_KEY não configurada. "
+                        "Copie .env.example para .env e preencha a chave.",
+                        file=sys.stderr,
+                    )
+                else:
+                    field = ".".join(str(x) for x in err["loc"])
+                    print(
+                        f"Configuração inválida: {field}: {err['msg']}",
+                        file=sys.stderr,
+                    )
             return 2
         agent = Agent(
             client=openai.OpenAI(api_key=settings.openai_api_key.get_secret_value()),
@@ -44,17 +52,22 @@ def main(
         "Empório da Música — assistente virtual. "
         "Digite sua mensagem (Ctrl-D para sair)."
     )
-    while True:
-        try:
-            text = input_fn("Você: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nAté mais! 🎸")
-            break
-        if text:
-            print(f"Empório: {agent.reply(text).reply}")
-
-    if args.transcript:
-        args.transcript.write_text(to_markdown(agent.turns, TITLE), encoding="utf-8")
+    try:
+        while True:
+            try:
+                text = input_fn("Você: ").strip()
+            except EOFError:
+                break
+            if text:
+                print(f"Empório: {agent.reply(text).reply}")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if args.transcript:
+            args.transcript.write_text(
+                to_markdown(agent.turns, TITLE), encoding="utf-8"
+            )
+    print("\nAté mais! 🎸")
     return 0
 
 
