@@ -24,7 +24,7 @@ Democratizar o acesso a instrumentos musicais de qualidade na região Centro-Oes
 | CNPJ | 12.345.678/0001-90 |
 | Endereço | Rua 14 de Maio, 3200 — Centro, Campo Grande - MS, 79202-333 |
 | Telefone / WhatsApp | (67) 3341-4444 |
-| E-mail | contato@empóriodamusica.com.br |
+| E-mail | contato@emporiodamusica.com.br |
 | Fundação | 2008 |
 
 ## 2. Horário de Funcionamento
@@ -47,12 +47,12 @@ Aceitamos as seguintes formas de pagamento para compras presenciais e online:
 |---|---|---|
 | PIX | Pagamento à vista | 5% de desconto sobre o preço de tabela |
 | Cartão de Débito | Pagamento à vista | Todas as bandeiras aceitas |
-| Cartão de Crédito | Até 12x sem juros | Parcela mínima de R$ 100,00 |
+| Cartão de Crédito | Até 12x sem juros | Parcela mínima conforme §3.1 |
 | Boleto Bancário | Pagamento à vista | Compensação em até 3 dias úteis |
 
 ### 3.1 Regras de Parcelamento
 
-- Parcelamento em até 3x: sem juros, sem valor mínimo de parcela (exceto abaixo de R$ 50,00).
+- Parcelamento em até 3x: sem juros, parcela mínima de R$ 50,00.
 - Parcelamento de 4x a 6x: sem juros, parcela mínima de R$ 80,00.
 - Parcelamento de 7x a 12x: sem juros, parcela mínima de R$ 100,00.
 - Combinação de formas de pagamento: permitida (ex.: PIX + cartão) para compras acima de R$ 2.000,00.
@@ -133,7 +133,7 @@ A Empório da Música realiza promoções periódicas ao longo do ano. As princi
 
 ## 7. Atendimento via WhatsApp
 
-O canal de WhatsApp (67) 3321-4500 é o principal meio de atendimento remoto da Empório da Música. O atendimento pode ser realizado por atendentes humanos ou pelo assistente virtual.
+O canal de WhatsApp (67) 3341-4444 é o principal meio de atendimento remoto da Empório da Música. O atendimento pode ser realizado por atendentes humanos ou pelo assistente virtual.
 
 ### 7.1 Diretrizes de Atendimento
 
