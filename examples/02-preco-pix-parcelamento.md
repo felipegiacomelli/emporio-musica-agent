@@ -6,29 +6,20 @@ Quanto custa o Takamine GD20?
 
 ### Agente
 
-<details><summary>🔧 search_products({"query":"Takamine GD20","category":"Violões","max_price":null,"on_promotion":false,"include_unavailable":true})</summary>
+<details><summary>🔧 search_products({"query":"Takamine GD20","category":null,"max_price":null,"on_promotion":false,"include_unavailable":true})</summary>
 
 ```json
 {"results": [{"id": 95, "name": "Takamine GD20 Dreadnought Natural", "category": "Violões", "price": "R$ 2.199,00", "final_price": "R$ 2.199,00", "pix_price": "R$ 2.089,05", "promotion": null, "stock": 5, "status": "active", "available": true, "unavailable_reason": null, "specs": {"top": "Cedro Sóli…
 ```
 </details>
 
-O **Takamine GD20 Dreadnought Natural** custa **R$ 2.199,00**. No PIX, sai por **R$ 2.089,05**. Está disponível!
-
-A loja está fechada agora; a equipe volta a atender na segunda-feira, às 09:00.
+O Takamine GD20 Dreadnought Natural custa **R$ 2.199,00**. No PIX, fica por **R$ 2.089,05**. Está disponível! 🎸
 
 ### Cliente
 
 E se eu pagar no cartão em 12x, fica quanto cada parcela?
 
 ### Agente
-
-<details><summary>🔧 search_products({"query":"Takamine GD20","category":"Violões","max_price":null,"on_promotion":false,"include_unavailable":false})</summary>
-
-```json
-{"results": [{"id": 95, "name": "Takamine GD20 Dreadnought Natural", "category": "Violões", "price": "R$ 2.199,00", "final_price": "R$ 2.199,00", "pix_price": "R$ 2.089,05", "promotion": null, "stock": 5, "status": "active", "available": true, "unavailable_reason": null, "specs": {"top": "Cedro Sóli…
-```
-</details>
 
 <details><summary>🔧 quote_purchase({"items":[{"product_id":95,"quantity":1}],"installments":12,"delivery_city":null})</summary>
 
@@ -37,7 +28,7 @@ E se eu pagar no cartão em 12x, fica quanto cada parcela?
 ```
 </details>
 
-No cartão, o Takamine GD20 fica em **12x de R$ 183,25 sem juros**. 🎸
+No cartão, fica em **12x de R$ 183,25 sem juros**. 🎸
 
 ### Cliente
 
@@ -45,14 +36,7 @@ Moro em Campo Grande. Se eu levar também um Kala KA-C, quanto fica tudo no PIX 
 
 ### Agente
 
-<details><summary>🔧 search_products({"query":"Takamine GD20","category":"Violões","max_price":null,"on_promotion":false,"include_unavailable":false})</summary>
-
-```json
-{"results": [{"id": 95, "name": "Takamine GD20 Dreadnought Natural", "category": "Violões", "price": "R$ 2.199,00", "final_price": "R$ 2.199,00", "pix_price": "R$ 2.089,05", "promotion": null, "stock": 5, "status": "active", "available": true, "unavailable_reason": null, "specs": {"top": "Cedro Sóli…
-```
-</details>
-
-<details><summary>🔧 search_products({"query":"Kala KA-C","category":"Ukuleles","max_price":null,"on_promotion":false,"include_unavailable":true})</summary>
+<details><summary>🔧 search_products({"query":"Kala KA-C","category":null,"max_price":null,"on_promotion":false,"include_unavailable":true})</summary>
 
 ```json
 {"results": [{"id": 118, "name": "Kalani KAL-300S Soprano Natural", "category": "Ukuleles", "price": "R$ 179,90", "final_price": "R$ 179,90", "pix_price": "R$ 170,91", "promotion": null, "stock": 12, "status": "active", "available": true, "unavailable_reason": null, "specs": {"top": "Spruce", "back_…
@@ -66,10 +50,6 @@ Moro em Campo Grande. Se eu levar também um Kala KA-C, quanto fica tudo no PIX 
 ```
 </details>
 
-Levando os dois, fica assim no PIX:
+Levando o Takamine GD20 e o Kala KA-C, fica **R$ 2.421,46 no PIX**, com frete grátis para Campo Grande. 🎶
 
-- Takamine GD20: R$ 2.089,05
-- Kala KA-C: R$ 332,41
-- Frete para Campo Grande: grátis
-
-**Total com frete: R$ 2.421,46.** 🎶
+O prazo de entrega é de 1 a 3 dias úteis.
