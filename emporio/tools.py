@@ -131,7 +131,8 @@ def search_products(store: Store, args: SearchArgs) -> dict[str, Any]:
 def _contact_matches(order: Order, contact: str) -> bool:
     contact = contact.strip()
     if "@" in contact:
-        return contact.casefold() == order.customer.email.casefold()
+        email = order.customer.email
+        return email is not None and contact.casefold() == email.casefold()
     phone = digits(contact)
     return bool(phone) and phone == digits(order.customer.phone)
 

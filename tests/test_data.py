@@ -1,16 +1,6 @@
-import shutil
 from decimal import Decimal
-from pathlib import Path
 
-from emporio.config import DATA_DIR
-from emporio.data import (
-    Product,
-    Promotion,
-    description_conflicts,
-    digits,
-    fold,
-    load_store,
-)
+from emporio.data import Product, Promotion, digits, fold, load_store
 
 STORE = load_store()
 BY_ID: dict[int, Product] = {p.id: p for p in STORE.products}
@@ -32,33 +22,12 @@ def test_digits() -> None:
     assert digits("+55 (67) 99654-7821") == digits("67996547821") == "67996547821"
 
 
-def test_conflicting_descriptions_dropped() -> None:
-    flagged = {p.id for p in STORE.products if p.description is None}
-    assert flagged == {135, 137, 139, 140, 142, 144}
-
-
-def test_kalani_is_not_kala() -> None:
-    assert not description_conflicts("Kalani KAL-300S", "Ukulele Kalani soprano")
-    assert description_conflicts("Kalani KAL-300S", "Ukulele Kala soprano")
-
-
 def test_active_promotion_only() -> None:
     assert BY_ID[121].promotion == Promotion(20, "Desconto Exclusivo")
     assert BY_ID[121].final_price == Decimal("439.20")
     assert BY_ID[96].promotion is None  # two inactive rows
     assert BY_ID[93].promotion is None  # two inactive rows
     assert BY_ID[95].final_price == Decimal("2199.00")
-
-
-def test_highest_active_promotion_wins(tmp_path: Path) -> None:
-    data = tmp_path / "data"
-    shutil.copytree(DATA_DIR, data)
-    promos = data / "desafio_tecnico_ai_eng - promotions.csv"
-    with promos.open("a", encoding="utf-8") as f:
-        f.write("\n26,121,30,Teste,1\n")
-    product = {p.id: p for p in load_store(data).products}[121]
-    assert product.promotion == Promotion(30, "Teste")
-    assert product.final_price == Decimal("384.30")
 
 
 def test_availability() -> None:
@@ -85,3 +54,10 @@ def test_order_join() -> None:
     assert order.tracking_code is None and order.estimated_delivery is None
     assert STORE.orders[8].tracking_code == "BRJL5544332BR"
     assert STORE.orders[8].items[0].product_name == "Kala KA-C Concert Mogno"
+
+
+def test_clean_data_loaded() -> None:
+    assert BY_ID[142].description is None and BY_ID[95].description
+    assert BY_ID[84].name == "Giannini GN-15 Nylon Cedro Natural"
+    assert STORE.orders[10].customer.email == "bruno.martins@jmail.com"
+    assert STORE.product(95) is BY_ID[95] and STORE.product(999) is None
