@@ -48,7 +48,8 @@ POLICY_EDITS = [
     " mínima de R$ 50,00` (the original wording contradicts itself).",
 ]
 
-MIN_INSTALLMENT = [(3, Decimal(50)), (6, Decimal(80)), (12, Decimal(100))]
+# §3.1: (max installments in the tier, minimum installment value)
+INSTALLMENT_TIERS = [(3, Decimal(50)), (6, Decimal(80)), (12, Decimal(100))]
 
 
 def description_conflicts(name: str, description: str) -> bool:
@@ -140,7 +141,7 @@ def clean(raw_dir: Path = DATA_DIR) -> CleanResult:
         m = re.fullmatch(r"credit_(\d+)x", o["payment_method"])
         if m:
             n = int(m.group(1))
-            minimum = next(v for limit, v in MIN_INSTALLMENT if n <= limit)
+            minimum = next(v for limit, v in INSTALLMENT_TIERS if n <= limit)
             if Decimal(o["total_brl"]) / n < minimum:
                 kept.append(
                     f"order {o['order_id']}: {n}x of"

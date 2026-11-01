@@ -18,9 +18,9 @@ from typing import Any
 import openai
 
 from emporio import agent as agent_module
-from emporio import prompt, tools
+from emporio import clean, data, prompt, rules, tools
 from emporio.agent import Agent, to_markdown
-from emporio.config import DATA_DIR, Settings
+from emporio.config import Settings
 from emporio.data import load_store
 from evals.grade import grade, load_cases
 
@@ -102,11 +102,16 @@ def main() -> int:
         "case_set_version": version,
         "fingerprints": {
             "cases": sha256(CASES),
-            "data": sha256(*sorted(DATA_DIR.glob("*.csv"))),
+            # what the runtime loads (before 2026-11-01 20:30 UTC this hashed
+            # the raw CSVs instead)
+            "data": sha256(*sorted(clean.CLEAN_DIR.glob("*.csv"))),
             "policy": sha256(Path(prompt.__file__).with_name("policy.md")),
             "prompt": sha256(Path(prompt.__file__)),
             "tools": sha256(Path(tools.__file__)),
             "agent": sha256(Path(agent_module.__file__)),
+            "rules": sha256(Path(rules.__file__)),
+            "loader": sha256(Path(data.__file__)),
+            "cleaner": sha256(Path(clean.__file__)),
         },
         "git_rev": git("rev-parse", "--short", "HEAD"),
         "git_dirty": bool(git("status", "--porcelain", "--untracked-files=no")),

@@ -1,10 +1,12 @@
 import json
 from datetime import date
+from decimal import Decimal
 from typing import Any
 
 import pytest
 
 from emporio.data import load_store
+from emporio.rules import _shipping_fee, customer_date
 from emporio.tools import run_tool
 
 STORE = load_store()
@@ -159,6 +161,7 @@ def test_preference_rules() -> None:
     [
         {"reason": "troca"},
         {"reason": "arrependimento", "received_on": "2026-12-01"},  # future
+        {"reason": "arrependimento", "received_on": "31/02"},  # no such day
         {"reason": "arrependimento", "received_on": "ontem"},
     ],
 )
@@ -170,3 +173,38 @@ def test_rule_summary_explains_the_rule() -> None:
     assert "7 dias" in ret("arrependimento")["rule_summary"]
     assert "30 dias" in ret("defeito")["rule_summary"]
     assert "venda final" in ret("preferencia")["rule_summary"]
+
+
+def test_shipping_threshold_is_strictly_above_500() -> None:
+    # "acima de R$ 500,00" read strictly: exactly 500 pays the R$ 35 fee
+    assert _shipping_fee("Campo Grande", Decimal("500.00")) == Decimal(35)
+    assert _shipping_fee("Campo Grande", Decimal("500.01")) == Decimal(0)
+    assert _shipping_fee("Dourados", Decimal("900")) is None
+
+
+def test_quantity_over_stock_and_duplicate_lines() -> None:
+    assert "estoque insuficiente" in quote([(95, 6)])["error"]  # stock 5
+    stock = STORE.product(95).stock  # type: ignore[union-attr]
+    # the same product split over two lines is checked against stock as one
+    assert "estoque insuficiente" in quote([(95, stock), (95, 1)])["error"]
+    merged = quote([(81, 1), (81, 1)])
+    assert len(merged["lines"]) == 1 and merged["lines"][0]["quantity"] == 2
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("25/10", date(2026, 10, 25)),
+        ("28/12", date(2025, 12, 28)),  # no year, would be future -> last year
+        ("25/10/2026", date(2026, 10, 25)),
+        ("25/10/26", date(2026, 10, 25)),
+        ("2026-10-25", date(2026, 10, 25)),
+    ],
+)
+def test_customer_date(text: str, expected: date) -> None:
+    assert customer_date(text, TODAY) == expected
+
+
+def test_return_with_customer_date_format() -> None:
+    r = ret("arrependimento", channel="online", received_on="25/10")
+    assert r["days_since_receipt"] == 9 and r["decision"] == "fora_da_politica"

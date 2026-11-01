@@ -4,17 +4,17 @@ The model never does this arithmetic or rule evaluation; it calls these
 through tools and reports the result.
 """
 
+import re
 from datetime import date
 from decimal import Decimal
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from emporio.clean import INSTALLMENT_TIERS
 from emporio.data import Store, brl, fold, money
 
 PIX_FACTOR = Decimal("0.95")
-# §3.1: (max installments in the tier, minimum installment value)
-INSTALLMENT_TIERS = [(3, Decimal(50)), (6, Decimal(80)), (12, Decimal(100))]
 # §5.1: assumption — the metropolitan region is the city of Campo Grande.
 METRO_CITIES = {"campo grande"}
 FREE_SHIPPING_ABOVE = Decimal(500)
@@ -105,13 +105,16 @@ def _shipping(city: str | None, fee: Decimal | None) -> dict[str, Any]:
 def quote_purchase(store: Store, args: QuoteArgs) -> dict[str, Any]:
     lines, problems = [], []
     subtotal = pix_total = Decimal(0)
+    quantities: dict[int, int] = {}  # same product twice -> one line
     for item in args.items:
-        product = store.product(item.product_id)
+        quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
+    for product_id, quantity in quantities.items():
+        product = store.product(product_id)
         if product is None:
-            problems.append(f"produto {item.product_id} não existe")
+            problems.append(f"produto {product_id} não existe")
             continue
         reason = unavailable_reason(product.status, product.stock)
-        if reason or item.quantity > product.stock:
+        if reason or quantity > product.stock:
             problems.append(
                 f"{product.name} indisponível ({reason or 'estoque insuficiente'})"
             )
@@ -121,14 +124,14 @@ def quote_purchase(store: Store, args: QuoteArgs) -> dict[str, Any]:
             if product.promotion
             else money(product.price * PIX_FACTOR)
         )
-        line_total = product.final_price * item.quantity
+        line_total = product.final_price * quantity
         subtotal += line_total
-        pix_total += unit_pix * item.quantity
+        pix_total += unit_pix * quantity
         lines.append(
             {
                 "product_id": product.id,
                 "name": product.name,
-                "quantity": item.quantity,
+                "quantity": quantity,
                 "unit_price": brl(product.price),
                 "promotion_percent": (
                     product.promotion.percent if product.promotion else None
@@ -180,9 +183,9 @@ class ReturnArgs(BaseModel):
 
     reason: Literal["arrependimento", "defeito", "preferencia"]
     channel: Literal["online", "loja"] | None = None
-    received_on: date | None = None
+    received_on: str | None = None  # as the customer said it: dd/mm[/aaaa]
     days_since_receipt: int | None = Field(None, ge=0)
-    purchased_on: date | None = None
+    purchased_on: str | None = None
     days_since_purchase: int | None = Field(None, ge=0)
     used: bool | None = None
     original_packaging: bool | None = None
@@ -190,11 +193,31 @@ class ReturnArgs(BaseModel):
     final_sale: bool | None = None
 
 
-def _days(on: date | None, days: int | None, today: date) -> int | None:
-    if on is None:
+def customer_date(text: str, today: date) -> date:
+    """Parse "25/10", "25/10/2026" or "2026-10-25"; a date without a year is
+    the most recent one that is not in the future."""
+    text = text.strip()
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        pass
+    m = re.fullmatch(r"(\d{1,2})/(\d{1,2})(?:/(\d{2}|\d{4}))?", text)
+    if not m:
+        raise ValueError(f"data inválida: {text!r}; use dd/mm ou dd/mm/aaaa")
+    day, month = int(m.group(1)), int(m.group(2))
+    if m.group(3):
+        year = int(m.group(3))
+        return date(year + 2000 if year < 100 else year, month, day)
+    parsed = date(today.year, month, day)
+    return parsed if parsed <= today else date(today.year - 1, month, day)
+
+
+def _days(text: str | None, days: int | None, today: date) -> int | None:
+    if text is None:
         return days
+    on = customer_date(text, today)
     if on > today:
-        raise ValueError(f"data no futuro: {on.isoformat()}")
+        raise ValueError(f"data no futuro: {on.strftime('%d/%m/%Y')}")
     return (today - on).days
 
 
