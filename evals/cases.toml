@@ -6,7 +6,7 @@
 # Every case lists `bad` replies that its grader must fail (checked in CI by
 # tests/test_grade.py).
 
-version = 6  # v6: a fallback reply fails; expected tool calls must succeed; date cases need the customer's literal date. v5: every case has a good fixture; empty_category blocks 'temos saxofone'; no_partner_store allows the store e-mail; pix_full_price needs only the PIX price. v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases. v4: roland_88 regex accepts markdown between brand and model (grader false negative)
+version = 7  # v7: expired_promo accepts 'promoção ... não está ativa' (grader false negative in v6). v6: a fallback reply fails; expected tool calls must succeed; date cases need the customer's literal date. v5: every case has a good fixture; empty_category blocks 'temos saxofone'; no_partner_store allows the store e-mail; pix_full_price needs only the PIX price. v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases. v4: roland_88 regex accepts markdown between brand and model (grader false negative)
 clock = "2026-11-03T10:00:00-04:00"  # Tuesday, store open
 
 [[case]]
@@ -98,7 +98,7 @@ tool_calls = [{ turn = 0, name = "search_products" }]
 id = "expired_promo"
 turns = ["O Martin D-28 está na Black Friday com 30% de desconto?"]
 expect_tools = [{ name = "search_products", turn = 0 }]
-must_match = ['(não|nenhuma)[^.]{0,80}(promo|desconto)']
+must_match = ['(não|nenhuma)[^.]{0,80}(promo|desconto)|(promo|desconto)[^.]{0,80}não (está|é|existe|há)']
 must_prices = ["11499.00"]
 must_not_prices = ["8049.30"]
 [[case.bad]]
@@ -109,6 +109,9 @@ replies = ["Não há promoção ativa para ele no momento."]
 tool_calls = [{ turn = 0, name = "search_products" }]
 [[case.good]]
 replies = ["Não há promoção ativa para ele; o preço atual é R$ 11.499,00."]
+tool_calls = [{ turn = 0, name = "search_products" }]
+[[case.good]]  # the real v6 reply that the v6 grader rejected
+replies = ["Não. A promoção de Black Friday com 30% de desconto não está ativa para o **Martin D-28 Dreadnought Natural**. O preço atual é **R$ 11.499,00**."]
 tool_calls = [{ turn = 0, name = "search_products" }]
 
 [[case]]
