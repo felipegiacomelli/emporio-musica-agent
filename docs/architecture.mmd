@@ -1,0 +1,18 @@
+flowchart TB
+    C([Customer]) <-->|"messages"| CLI["CLI · python -m emporio"]
+    CLI <--> A["Agent loop · agent.py<br/>up to 5 tool rounds per turn<br/>fixed fallback on error"]
+
+    PROMPT["System instructions · prompt.py<br/>persona + rules<br/>+ full policy manual (policy.md, ~3.1k tokens)<br/>+ clock (now, store open/closed)"] -.-> A
+    A <-->|"instructions, history, tool schemas<br/>⇄ tool calls or final text"| M[("OpenAI Responses API<br/>gpt-6.1-terra")]
+
+    A <-->|"run_tool()"| TOOLS
+    subgraph TOOLS["Tools · deterministic Python (tools.py, rules.py)"]
+        direction LR
+        T1["search_products<br/>availability · promo · PIX price"]
+        T2["get_order<br/>order + contact must match"]
+        T3["quote_purchase<br/>totals · installments · shipping"]
+        T4["check_return<br/>return rules · dates"]
+    end
+
+    RAW[("data/*.csv<br/>raw, as given")] -->|"python -m emporio.clean<br/>offline, every change logged"| CLEAN[("data/clean/*.csv<br/>+ CHANGES.md")]
+    CLEAN -->|"load_store() at start"| TOOLS
