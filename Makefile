@@ -7,7 +7,7 @@ install:
 lint:
 	uv run ruff check .
 	uv run black --check .
-	uv run mypy emporio
+	uv run mypy emporio evals
 
 test:
 	uv run pytest --cov=emporio --cov-report=term-missing
