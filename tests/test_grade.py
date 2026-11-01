@@ -10,7 +10,7 @@ BY_ID = {c.id: c for c in CASES}
 
 
 def test_case_set_shape() -> None:
-    assert VERSION == 1 and len(CASES) == 20
+    assert VERSION == 2 and len(CASES) == 21
     assert len(BY_ID) == len(CASES)  # unique ids
 
 

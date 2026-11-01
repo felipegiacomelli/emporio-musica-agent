@@ -6,7 +6,7 @@
 # Every case lists `bad` replies that its grader must fail (checked in CI by
 # tests/test_grade.py).
 
-version = 1
+version = 2  # v2 (2026-11-01): added more_results, found reading v1 transcripts
 clock = "2026-11-03T10:00:00-04:00"  # Tuesday, store open
 
 [[case]]
@@ -245,3 +245,13 @@ must_match = ['segunda[^.]{0,40}9']
 replies = ["Estamos abertos agora!"]
 [[case.bad]]
 replies = ["Oi! Como posso ajudar?"]
+
+# --- added in v2: found reading the v1 baseline transcripts ---------------
+[[case]]
+id = "more_results"
+turns = ["Quais opções de violões disponíveis custando até R$1000?"]
+expect_tools = [{ name = "search_products", turn = 0 }]
+must_match = ['(mais|outr[ao]s)\W+(\d+\W+|duas\W+|dois\W+)?(opç|modelo|violõ)']
+[[case.bad]]  # the actual v1 baseline reply: 10 of 12 listed, the rest not mentioned
+replies = ["Temos estas opções disponíveis até R$ 1.000: Tagima Memphis AC-39 — R$ 429,90; Yamaha C40 — R$ 599,90. Esses modelos têm 5% de desconto no PIX. Você prefere cordas de nylon ou aço? Posso ajudar a escolher!"]
+tool_calls = [{ turn = 0, name = "search_products" }]
