@@ -1,7 +1,7 @@
-"""The agent's two tools: pure functions over the loaded store.
+"""The agent's tools: pure functions over the loaded store.
 
-Rules enforced here, not in the prompt:
-- availability (active and in stock) and promotion math;
+Rules enforced here (and in emporio/rules.py), not in the prompt:
+- availability, promotion and PIX math, installments, shipping, returns;
 - order details only for a matching order number + e-mail/phone pair.
 """
 
@@ -13,9 +13,16 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from emporio.data import Order, Product, Store, digits, fold, money
+from emporio.rules import (
+    PIX_FACTOR,
+    QuoteArgs,
+    ReturnArgs,
+    check_return,
+    quote_purchase,
+    unavailable_reason,
+)
 
 MAX_RESULTS = 10
-PIX_FACTOR = Decimal("0.95")
 NOT_FOUND = (
     "Não encontrei um pedido com esses dados. Confira o número do pedido e o "
     "e-mail ou telefone usados na compra."
@@ -106,26 +113,43 @@ def _render_product(p: Product) -> dict[str, Any]:
         "stock": p.stock,
         "status": p.status,
         "available": p.available,
+        "unavailable_reason": unavailable_reason(p.status, p.stock),
         "specs": p.specs,
         "description": p.description,
     }
 
 
+def _empty_note(store: Store, args: SearchArgs, unavailable: int) -> str:
+    if args.category and not any(
+        p.category.name == args.category for p in store.products
+    ):
+        return "Esta categoria não tem nenhum produto no catálogo no momento."
+    if unavailable:
+        return (
+            f"{unavailable} produto(s) correspondem à busca, mas estão"
+            " indisponíveis; use include_unavailable=true para ver o motivo."
+        )
+    return "Nenhum produto do catálogo corresponde à busca."
+
+
 def search_products(store: Store, args: SearchArgs) -> dict[str, Any]:
-    found = [
+    matching = [
         p
         for p in store.products
-        if (args.include_unavailable or p.available)
-        and (args.category is None or p.category.name == args.category)
+        if (args.category is None or p.category.name == args.category)
         and (args.max_price is None or p.final_price <= args.max_price)
         and (not args.on_promotion or p.promotion is not None)
         and (not args.query or _matches(p, args.query))
     ]
+    found = [p for p in matching if args.include_unavailable or p.available]
     found.sort(key=lambda p: (p.final_price, p.id))
-    return {
+    result: dict[str, Any] = {
         "results": [_render_product(p) for p in found[:MAX_RESULTS]],
         "more": max(0, len(found) - MAX_RESULTS),
     }
+    if not found:
+        result["note"] = _empty_note(store, args, len(matching))
+    return result
 
 
 def _contact_matches(order: Order, contact: str) -> bool:
@@ -228,6 +252,92 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    {
+        "type": "function",
+        "name": "quote_purchase",
+        "description": (
+            "Calcula valores de uma compra: total, total no PIX (regra §6.2), "
+            "parcelas permitidas (mínimos do §3.1), frete (§5) e se pode "
+            "combinar formas de pagamento. Use SEMPRE que o cliente perguntar "
+            "total, parcelas, PIX de mais de um item ou frete. Use os "
+            "product_id retornados por search_products."
+        ),
+        "strict": True,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "product_id": {"type": "integer"},
+                            "quantity": {"type": "integer"},
+                        },
+                        "required": ["product_id", "quantity"],
+                        "additionalProperties": False,
+                    },
+                },
+                "installments": {
+                    "type": ["integer", "null"],
+                    "description": "Número de parcelas pedido (1 a 12).",
+                },
+                "delivery_city": {
+                    "type": ["string", "null"],
+                    "description": "Cidade de entrega, se o cliente informou.",
+                },
+            },
+            "required": ["items", "installments", "delivery_city"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "type": "function",
+        "name": "check_return",
+        "description": (
+            "Verifica as regras de troca e devolução (§4) para o caso do "
+            "cliente e diz se ele pode solicitar, se está fora da política ou "
+            "quais dados faltam. Use SEMPRE em pedidos de troca ou devolução, "
+            "com null nos dados que o cliente não informou. Datas no formato "
+            "AAAA-MM-DD; para 'há N dias' use days_since_*. Não conta datas "
+            "por conta própria."
+        ),
+        "strict": True,
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "enum": ["arrependimento", "defeito", "preferencia"],
+                },
+                "channel": {
+                    "type": ["string", "null"],
+                    "enum": ["online", "loja", None],
+                },
+                "received_on": {"type": ["string", "null"]},
+                "days_since_receipt": {"type": ["integer", "null"]},
+                "purchased_on": {"type": ["string", "null"]},
+                "days_since_purchase": {"type": ["integer", "null"]},
+                "used": {"type": ["boolean", "null"]},
+                "original_packaging": {"type": ["boolean", "null"]},
+                "customized": {"type": ["boolean", "null"]},
+                "final_sale": {"type": ["boolean", "null"]},
+            },
+            "required": [
+                "reason",
+                "channel",
+                "received_on",
+                "days_since_receipt",
+                "purchased_on",
+                "days_since_purchase",
+                "used",
+                "original_packaging",
+                "customized",
+                "final_sale",
+            ],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -241,6 +351,10 @@ def run_tool(store: Store, name: str, arguments: str, today: date) -> str:
             result = search_products(store, SearchArgs.model_validate(raw))
         elif name == "get_order":
             result = get_order(store, OrderArgs.model_validate(raw), today)
+        elif name == "quote_purchase":
+            result = quote_purchase(store, QuoteArgs.model_validate(raw))
+        elif name == "check_return":
+            result = check_return(ReturnArgs.model_validate(raw), today)
         else:
             result = {"error": f"ferramenta desconhecida: {name}"}
     except (ValueError, ValidationError) as exc:  # JSONDecodeError is a ValueError

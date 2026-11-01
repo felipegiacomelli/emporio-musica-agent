@@ -163,4 +163,23 @@ def test_schemas_are_strict_and_complete() -> None:
         assert params["additionalProperties"] is False
         assert set(params["required"]) == set(params["properties"])
     names = {t["name"] for t in TOOL_SCHEMAS}
-    assert names == {"search_products", "get_order"}
+    assert names == {"search_products", "get_order", "quote_purchase", "check_return"}
+
+
+def test_unavailable_reason() -> None:
+    reasons = {
+        pid: one(query=q, include_unavailable=True)["unavailable_reason"]
+        for pid, q in [(96, "Giannini GF-3D"), (136, "Ibanez Bass 2X"), (130, "KA-ABP")]
+    }
+    assert reasons == {96: "sem estoque", 136: "descontinuado", 130: "em breve"}
+    assert one(query="Takamine GD20")["unavailable_reason"] is None
+
+
+def test_empty_result_notes() -> None:
+    empty_cat = search(category="Instrumentos de Sopro (Metais)")
+    assert "não tem nenhum produto" in empty_cat["note"]
+    only_unavailable = search(query="Giannini GF-3D")
+    assert "indisponíveis" in only_unavailable["note"]
+    nothing = search(query="Di Giorgio")
+    assert nothing["note"] == "Nenhum produto do catálogo corresponde à busca."
+    assert "note" not in search(query="Takamine GD20")
