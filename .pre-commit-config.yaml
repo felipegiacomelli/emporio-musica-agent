@@ -21,7 +21,7 @@ repos:
       - id: black
   - repo: local
     hooks:
-      - id: mypy
+      - id: make-lint
         name: make lint
         entry: make lint
         language: system
