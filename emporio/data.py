@@ -35,6 +35,16 @@ def money(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
+def brl(value: Decimal) -> str:
+    """Format as Brazilian currency, e.g. R$ 2.199,00."""
+    us = f"{money(value):,.2f}"
+    return "R$ " + us.replace(",", "_").replace(".", ",").replace("_", ".")
+
+
+def br_date(value: date) -> str:
+    return value.strftime("%d/%m/%Y")
+
+
 @frozen
 class Category:
     id: int

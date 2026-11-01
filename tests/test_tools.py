@@ -49,7 +49,10 @@ def test_violoes_ate_1000_excludes_unavailable() -> None:
     # 113 (discontinued) excluded; results sorted by final price
     assert {83, 85, 81}.issubset(ids) and not {96, 113} & ids
     assert len(ids) == 10 and res["more"] == 2
-    prices = [float(r["final_price"]) for r in res["results"]]
+    prices = [
+        float(r["final_price"][3:].replace(".", "").replace(",", "."))
+        for r in res["results"]
+    ]
     assert prices == sorted(prices)
 
 
@@ -61,12 +64,12 @@ def test_include_unavailable_shows_status() -> None:
 
 def test_promo_rendering() -> None:
     r = one(query="Ohana CK-20")
-    assert r["price"] == "549.00" and r["final_price"] == "439.20"
+    assert r["price"] == "R$ 549,00" and r["final_price"] == "R$ 439,20"
     assert r["promotion"] == {"percent": 20, "name": "Desconto Exclusivo"}
     assert r["pix_price"] is None  # §6.2: PIX never stacks on a promotion
     gd20 = one(query="Takamine GD20")
-    assert gd20["promotion"] is None and gd20["pix_price"] == "2089.05"
-    assert one(query="Yamaha C40")["pix_price"] == "569.91"  # 569.905 rounds up
+    assert gd20["promotion"] is None and gd20["pix_price"] == "R$ 2.089,05"
+    assert one(query="Yamaha C40")["pix_price"] == "R$ 569,91"  # 569.905 rounds up
 
 
 def test_max_price_uses_final_price() -> None:
@@ -105,10 +108,10 @@ def test_order_by_email_and_phone_variants() -> None:
 def test_order_fields_and_overdue() -> None:
     o = order(8, "67996547821")
     assert o["status_pt"] == "enviado" and o["delivery_overdue"] is True
-    assert o["estimated_delivery"] == "2026-02-28"
+    assert o["estimated_delivery"] == "28/02/2026"
     assert o["tracking_code"] == "BRJL5544332BR"
     assert o["items"] == [{"name": "Kala KA-C Concert Mogno", "quantity": 1}]
-    assert o["total"] == "349.90"
+    assert o["total"] == "R$ 349,90"
     assert order(1, "pedro.oliveira@jmail.com")["delivery_overdue"] is False
 
 

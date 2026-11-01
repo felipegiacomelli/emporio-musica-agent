@@ -73,7 +73,7 @@ def test_runs_all_parallel_calls_then_answers() -> None:
     assert turn.reply == "O GD20 custa R$ 2.199,00." and not turn.fallback
     assert [c.name for c in turn.tool_calls] == ["search_products"] * 2
     assert set(outputs(client.requests[1])) == {"c1", "c2"}
-    assert "2199.00" in outputs(client.requests[1])["c1"]
+    assert "R$ 2.199,00" in outputs(client.requests[1])["c1"]
     assert turn.model == "fake-model" and a.turns == [turn]
 
 

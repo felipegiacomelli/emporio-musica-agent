@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from emporio.data import Store, fold, money
+from emporio.data import Store, brl, fold, money
 
 PIX_FACTOR = Decimal("0.95")
 # §3.1: (max installments in the tier, minimum installment value)
@@ -24,6 +24,28 @@ CONTACT = (
     "Para iniciar, fale com a equipe pelo WhatsApp (67) 3341-4444 ou pelo "
     "e-mail contato@emporiodamusica.com.br."
 )
+RULE_SUMMARY = {
+    "arrependimento": (
+        "Compras online: devolução em até 7 dias corridos após o recebimento, "
+        "sem justificativa. O produto deve estar sem sinais de uso, na "
+        "embalagem original, com acessórios e manuais. Reembolso na mesma forma "
+        "de pagamento em até 10 dias úteis; frete de devolução por conta da "
+        "loja (§4.1)."
+    ),
+    "defeito": (
+        "Defeito de fabricação: troca em até 30 dias corridos após a compra. "
+        "Depois disso, vale a garantia do fabricante, e a loja pode "
+        "intermediar. Mau uso, quedas, umidade e modificações não são cobertos "
+        "(§4.2, §8)."
+    ),
+    "preferencia": (
+        "Troca por preferência (cor, modelo, tamanho) em até 7 dias, mediante "
+        "disponibilidade, com o produto em perfeito estado e na embalagem "
+        "original; diferenças de valor são cobradas ou reembolsadas. Não vale "
+        "para instrumentos personalizados nem itens de liquidação 'venda "
+        "final' (§4.3, §4.4)."
+    ),
+}
 UNAVAILABLE_REASON = {"discontinued": "descontinuado", "coming_soon": "em breve"}
 
 
@@ -55,13 +77,18 @@ class QuoteArgs(BaseModel):
     delivery_city: str | None = None
 
 
-def _shipping(city: str | None, subtotal: Decimal) -> dict[str, Any]:
+def _shipping_fee(city: str | None, subtotal: Decimal) -> Decimal | None:
+    if city and fold(city) in METRO_CITIES:
+        return Decimal(0) if subtotal > FREE_SHIPPING_ABOVE else METRO_FEE
+    return None
+
+
+def _shipping(city: str | None, fee: Decimal | None) -> dict[str, Any]:
     if not city:
         return {"fee": None, "note": "Informe a cidade de entrega para o frete."}
-    if fold(city) in METRO_CITIES:
-        fee = Decimal(0) if subtotal > FREE_SHIPPING_ABOVE else METRO_FEE
+    if fee is not None:
         return {
-            "fee": str(money(fee)),
+            "fee": brl(fee),
             "deadline": "1 a 3 dias úteis (motoboy)",
             "rule": "§5.1: grátis acima de R$ 500,00; abaixo, R$ 35,00",
         }
@@ -102,20 +129,20 @@ def quote_purchase(store: Store, args: QuoteArgs) -> dict[str, Any]:
                 "product_id": product.id,
                 "name": product.name,
                 "quantity": item.quantity,
-                "unit_price": str(money(product.price)),
+                "unit_price": brl(product.price),
                 "promotion_percent": (
                     product.promotion.percent if product.promotion else None
                 ),
-                "unit_final_price": str(product.final_price),
-                "unit_pix_price": str(unit_pix),
-                "line_total": str(money(line_total)),
+                "unit_final_price": brl(product.final_price),
+                "unit_pix_price": brl(unit_pix),
+                "line_total": brl(line_total),
             }
         )
     if problems:
         return {"error": "; ".join(problems)}
 
     options = [
-        {"n": n, "value": str(money(subtotal / n))}
+        {"n": n, "value": brl(subtotal / n)}
         for n in range(1, 13)
         if money(subtotal / n) >= _min_installment(n)
     ]
@@ -124,25 +151,23 @@ def quote_purchase(store: Store, args: QuoteArgs) -> dict[str, Any]:
         n = args.installments
         requested = {
             "n": n,
-            "value": str(money(subtotal / n)),
+            "value": brl(subtotal / n),
             "allowed": money(subtotal / n) >= _min_installment(n),
-            "minimum": str(money(_min_installment(n))),
+            "minimum": brl(_min_installment(n)),
         }
-    shipping = _shipping(args.delivery_city, subtotal)
-    fee = Decimal(shipping["fee"]) if shipping["fee"] is not None else None
+    fee = _shipping_fee(args.delivery_city, subtotal)
+    shipping = _shipping(args.delivery_city, fee)
     return {
         "lines": lines,
-        "subtotal": str(money(subtotal)),
-        "pix_total": str(money(pix_total)),
+        "subtotal": brl(subtotal),
+        "pix_total": brl(pix_total),
         "pix_rule": "§6.2: 5% no PIX só em itens sem promoção",
         "installment_options": options,
         "max_installments": options[-1] if options else None,
         "requested_installments": requested,
         "shipping": shipping,
-        "total": str(money(subtotal + fee)) if fee is not None else None,
-        "pix_total_with_shipping": (
-            str(money(pix_total + fee)) if fee is not None else None
-        ),
+        "total": brl(subtotal + fee) if fee is not None else None,
+        "pix_total_with_shipping": (brl(pix_total + fee) if fee is not None else None),
         "split_payment_allowed": subtotal > SPLIT_PAYMENT_ABOVE,
     }
 
@@ -256,6 +281,7 @@ def check_return(args: ReturnArgs, today: date) -> dict[str, Any]:
     return {
         "decision": decision,
         "rule": rule,
+        "rule_summary": RULE_SUMMARY[args.reason],
         "days_since_receipt": receipt,
         "days_since_purchase": purchase,
         "reasons": reasons,

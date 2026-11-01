@@ -29,41 +29,43 @@ def ret(reason: str, **kw: Any) -> Any:
 
 def test_quote_installments_12x() -> None:
     q = quote([(95, 1)], installments=12)
-    assert q["subtotal"] == "2199.00"
+    assert q["subtotal"] == "R$ 2.199,00"
     assert q["requested_installments"] == {
         "n": 12,
-        "value": "183.25",
+        "value": "R$ 183,25",
         "allowed": True,
-        "minimum": "100.00",
+        "minimum": "R$ 100,00",
     }
 
 
 def test_quote_minimum_installment_tiers() -> None:
     q = quote([(120, 1)], installments=12)  # Kala KA-C 349.90
     assert q["requested_installments"]["allowed"] is False
-    assert q["max_installments"] == {"n": 4, "value": "87.48"}
+    assert q["max_installments"] == {"n": 4, "value": "R$ 87,48"}
     assert [o["n"] for o in q["installment_options"]] == [1, 2, 3, 4]
 
 
 def test_quote_cart_pix_and_free_shipping() -> None:
     q = quote([(81, 1), (120, 1)], delivery_city="campo grande")
-    assert q["subtotal"] == "949.80"
-    assert q["pix_total"] == "902.32"  # per-line rounding: 569.91 + 332.41
-    assert q["shipping"]["fee"] == "0.00"
-    assert q["total"] == "949.80" and q["pix_total_with_shipping"] == "902.32"
+    assert q["subtotal"] == "R$ 949,80"
+    assert q["pix_total"] == "R$ 902,32"  # per-line rounding: 569.91 + 332.41
+    assert q["shipping"]["fee"] == "R$ 0,00"
+    assert q["total"] == "R$ 949,80" and q["pix_total_with_shipping"] == "R$ 902,32"
     assert q["split_payment_allowed"] is False
 
 
 def test_quote_pix_never_stacks_on_promotion() -> None:
     q = quote([(121, 2)])  # Ohana CK-20, 20% off
-    assert q["lines"][0]["unit_final_price"] == "439.20"
-    assert q["pix_total"] == q["subtotal"] == "878.40"
+    assert q["lines"][0]["unit_final_price"] == "R$ 439,20"
+    assert q["pix_total"] == q["subtotal"] == "R$ 878,40"
 
 
 def test_quote_shipping_fee_below_500_and_other_city() -> None:
-    assert quote([(120, 1)], delivery_city="Campo Grande")["shipping"]["fee"] == "35.00"
+    assert (
+        quote([(120, 1)], delivery_city="Campo Grande")["shipping"]["fee"] == "R$ 35,00"
+    )
     q = quote([(120, 1)], delivery_city="Campo Grande")
-    assert q["total"] == "384.90"
+    assert q["total"] == "R$ 384,90"
     other = quote([(81, 1)], delivery_city="Dourados")
     assert other["shipping"]["fee"] is None and "CEP" in other["shipping"]["note"]
     assert other["total"] is None
@@ -162,3 +164,9 @@ def test_preference_rules() -> None:
 )
 def test_check_return_bad_args(args: dict[str, Any]) -> None:
     assert "error" in call("check_return", **args)
+
+
+def test_rule_summary_explains_the_rule() -> None:
+    assert "7 dias" in ret("arrependimento")["rule_summary"]
+    assert "30 dias" in ret("defeito")["rule_summary"]
+    assert "venda final" in ret("preferencia")["rule_summary"]

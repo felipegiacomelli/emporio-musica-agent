@@ -1,6 +1,15 @@
+from datetime import date
 from decimal import Decimal
 
-from emporio.data import Product, Promotion, digits, fold, load_store
+from emporio.data import (
+    Product,
+    Promotion,
+    br_date,
+    brl,
+    digits,
+    fold,
+    load_store,
+)
 
 STORE = load_store()
 BY_ID: dict[int, Product] = {p.id: p for p in STORE.products}
@@ -61,3 +70,10 @@ def test_clean_data_loaded() -> None:
     assert BY_ID[84].name == "Giannini GN-15 Nylon Cedro Natural"
     assert STORE.orders[10].customer.email == "bruno.martins@jmail.com"
     assert STORE.product(95) is BY_ID[95] and STORE.product(999) is None
+
+
+def test_brl_and_date_formatting() -> None:
+    assert brl(Decimal("1234567.5")) == "R$ 1.234.567,50"
+    assert brl(Decimal("569.905")) == "R$ 569,91"  # half up
+    assert brl(Decimal("0")) == "R$ 0,00"
+    assert br_date(date(2026, 2, 28)) == "28/02/2026"

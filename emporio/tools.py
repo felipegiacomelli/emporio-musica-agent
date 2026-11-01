@@ -12,7 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from emporio.data import Order, Product, Store, digits, fold, money
+from emporio.data import Order, Product, Store, br_date, brl, digits, fold
 from emporio.rules import (
     PIX_FACTOR,
     QuoteArgs,
@@ -99,12 +99,10 @@ def _render_product(p: Product) -> dict[str, Any]:
         "id": p.id,
         "name": p.name,
         "category": p.category.name,
-        "price": str(money(p.price)),
-        "final_price": str(p.final_price),
+        "price": brl(p.price),
+        "final_price": brl(p.final_price),
         # §6.2: the 5% PIX discount never stacks on a promotional price.
-        "pix_price": (
-            str(money(p.price * PIX_FACTOR)) if p.promotion is None else None
-        ),
+        "pix_price": (brl(p.price * PIX_FACTOR) if p.promotion is None else None),
         "promotion": (
             None
             if p.promotion is None
@@ -171,14 +169,14 @@ def get_order(store: Store, args: OrderArgs, today: date) -> dict[str, Any]:
         "customer_first_name": order.customer.name.split()[0],
         "status": order.status,
         "status_pt": STATUS_PT.get(order.status, order.status),
-        "order_date": order.order_date.isoformat(),
+        "order_date": br_date(order.order_date),
         "items": [
             {"name": i.product_name, "quantity": i.quantity} for i in order.items
         ],
-        "total": str(money(order.total)),
+        "total": brl(order.total),
         "payment_method": order.payment_method,
         "tracking_code": order.tracking_code,
-        "estimated_delivery": eta.isoformat() if eta else None,
+        "estimated_delivery": br_date(eta) if eta else None,
         "delivery_overdue": (
             order.status in OPEN_STATUSES and eta is not None and eta < today
         ),
