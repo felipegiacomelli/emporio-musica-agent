@@ -10,7 +10,7 @@ BY_ID = {c.id: c for c in CASES}
 
 
 def test_case_set_shape() -> None:
-    assert VERSION == 3 and len(CASES) == 31
+    assert VERSION == 4 and len(CASES) == 31
     assert len(BY_ID) == len(CASES)  # unique ids
 
 
@@ -62,3 +62,8 @@ def test_failure_names_the_pattern() -> None:
     case = BY_ID["off_topic"]
     result = grade(case, ["O Brasil, mas aqui é uma loja de instrumentos."], [])
     assert result.failures == ("must_not_match found: Brasil",)
+
+
+def test_roland_regex_tolerates_markdown() -> None:
+    reply = "O Roland que temos é o **Synth 3 Pro**, com 61 teclas."
+    assert grade(BY_ID["roland_88"], [reply], [(0, "search_products", {})]).passed

@@ -6,7 +6,7 @@
 # Every case lists `bad` replies that its grader must fail (checked in CI by
 # tests/test_grade.py).
 
-version = 3  # v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases
+version = 4  # v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases. v4: roland_88 regex accepts markdown between brand and model (grader false negative)
 clock = "2026-11-03T10:00:00-04:00"  # Tuesday, store open
 
 [[case]]
@@ -200,7 +200,7 @@ replies = ["Que pena! Fale com a loja."]
 id = "roland_88"
 turns = ["Vocês têm teclado Roland de 88 teclas?"]
 expect_tools = [{ name = "search_products", turn = 0 }]
-must_match = ['Roland Synth 3', '61']
+must_match = ['Roland\W+(\w+\W+){0,6}Synth 3', '61']
 must_not_match = ['Korg[^.]{0,80}88', '88[^.]{0,80}Korg']
 [[case.bad]]
 replies = ["Temos o Korg Synth 1 Pro com 88 teclas pesadas!"]
