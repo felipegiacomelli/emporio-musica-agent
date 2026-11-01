@@ -6,7 +6,7 @@
 # Every case lists `bad` replies that its grader must fail (checked in CI by
 # tests/test_grade.py).
 
-version = 2  # v2 (2026-11-01): added more_results, found reading v1 transcripts
+version = 3  # v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases
 clock = "2026-11-03T10:00:00-04:00"  # Tuesday, store open
 
 [[case]]
@@ -255,3 +255,126 @@ must_match = ['(mais|outr[ao]s)\W+(\d+\W+|duas\W+|dois\W+)?(opç|modelo|violõ)'
 [[case.bad]]  # the actual v1 baseline reply: 10 of 12 listed, the rest not mentioned
 replies = ["Temos estas opções disponíveis até R$ 1.000: Tagima Memphis AC-39 — R$ 429,90; Yamaha C40 — R$ 599,90. Esses modelos têm 5% de desconto no PIX. Você prefere cordas de nylon ou aço? Posso ajudar a escolher!"]
 tool_calls = [{ turn = 0, name = "search_products" }]
+
+# --- added in v3: math in tools, return rules, unavailable / not sold ---------
+[[case]]
+id = "installments_12x"
+turns = ["Quanto fica o Takamine GD20 em 12x no cartão?"]
+expect_tools = [{ name = "quote_purchase", args = { installments = 12 }, turn = 0 }]
+must_prices = ["183.25"]
+[[case.bad]]
+replies = ["Fica em 12x de R$ 183,25 sem juros."]  # right number, computed by the model
+tool_calls = [{ turn = 0, name = "search_products" }]
+[[case.bad]]
+replies = ["Fica em 12x de R$ 175,92."]
+tool_calls = [{ turn = 0, name = "quote_purchase", args = { installments = 12 } }]
+
+[[case]]
+id = "min_installment"
+turns = ["Posso parcelar o Kala KA-C em 12x?"]
+expect_tools = [{ name = "quote_purchase", turn = 0 }]
+must_match = ['não', '4 ?x']
+must_prices = ["87.48"]
+must_not_prices = ["29.16"]
+[[case.bad]]
+replies = ["Pode sim: 12x de R$ 29,16."]
+tool_calls = [{ turn = 0, name = "quote_purchase" }]
+[[case.bad]]
+replies = ["Em 12x não dá, a parcela mínima é R$ 100,00."]
+tool_calls = [{ turn = 0, name = "quote_purchase" }]
+
+[[case]]
+id = "cart_total_shipping"
+turns = ["Quero um Yamaha C40 e um Kala KA-C, entrega em Campo Grande. Quanto fica no total? E no PIX?"]
+expect_tools = [{ name = "quote_purchase", turn = 0 }]
+must_match = ['grátis|sem (custo de )?frete']
+must_prices = ["949.80", "902.32"]
+must_not_prices = ["984.80"]
+[[case.bad]]
+replies = ["Total R$ 949,80 + frete R$ 35,00 = R$ 984,80; no PIX R$ 902,32."]
+tool_calls = [{ turn = 0, name = "quote_purchase" }]
+[[case.bad]]
+replies = ["Total R$ 949,80, frete grátis. No PIX, R$ 902,31."]
+tool_calls = [{ turn = 0, name = "quote_purchase" }]
+
+[[case]]
+id = "shipping_other_city"
+turns = ["Moro em Dourados. Quanto fica o frete do Yamaha C40?"]
+must_match = ['CEP']
+must_not_prices = ["35.00", "0.00"]
+must_not_match = ['frete grátis']
+[[case.bad]]
+replies = ["O frete é R$ 35,00."]
+[[case.bad]]
+replies = ["Frete grátis, pois passa de R$ 500!"]
+
+[[case]]
+id = "return_out_of_window"
+turns = ["Comprei pelo site e recebi o violão dia 25/10. Nem abri a caixa. Posso devolver por arrependimento?"]
+expect_tools = [{ name = "check_return", turn = 0 }]
+must_match = ['7 dias', 'não|fora|passou']
+must_not_match = ['aprovad', 'dentro do prazo', 'registrei']
+[[case.bad]]
+replies = ["Sim, está dentro do prazo de 7 dias!"]
+tool_calls = [{ turn = 0, name = "check_return" }]
+[[case.bad]]
+replies = ["Não dá, já passaram os 7 dias."]  # right answer, model did the date math
+
+[[case]]
+id = "return_in_window"
+turns = ["Comprei online, recebi dia 30/10, não usei e está na caixa original. Quero devolver por arrependimento."]
+expect_tools = [{ name = "check_return", turn = 0 }]
+must_match = ['pode (solicitar|pedir)|dentro do prazo', '3341-4444']
+must_not_match = ['aprovad', 'registrei', 'já (iniciei|solicitei)']
+[[case.bad]]
+replies = ["Sua devolução está aprovada!"]
+tool_calls = [{ turn = 0, name = "check_return" }]
+[[case.bad]]
+replies = ["Pode solicitar, está dentro do prazo."]  # no contact to start it
+tool_calls = [{ turn = 0, name = "check_return" }]
+
+[[case]]
+id = "coming_soon"
+turns = ["Tem o ukulele Kala KA-ABP-CTG barítono?"]
+expect_tools = [{ name = "search_products", turn = 0 }]
+must_match = ['em breve|lançamento|ainda não (chegou|está disponível)|pré-venda']
+must_not_match = ['\b2 (unidades|em estoque)', 'temos sim']
+[[case.bad]]
+replies = ["Temos sim, 2 unidades por R$ 1.749,00."]
+tool_calls = [{ turn = 0, name = "search_products" }]
+[[case.bad]]
+replies = ["Não encontrei."]
+tool_calls = [{ turn = 0, name = "search_products" }]
+
+[[case]]
+id = "not_in_catalog"
+turns = ["Vocês têm harpa?"]
+must_match = ['não (temos|encontrei|há|trabalhamos|vendemos)']
+must_not_match = ['R\$', 'temos sim']
+[[case.bad]]
+replies = ["Temos sim! Harpa celta por R$ 3.500,00."]
+[[case.bad]]
+replies = ["Olá! Como posso ajudar?"]
+
+[[case]]
+id = "unknown_brand"
+turns = ["Tem violão Di Giorgio?"]
+expect_tools = [{ name = "search_products", turn = 0 }]
+must_match = ['não (temos|encontrei|há|trabalhamos)']
+must_not_match = ['Di Giorgio[^.]{0,40}R\$']
+[[case.bad]]
+replies = ["Temos o Di Giorgio Tarrega por R$ 1.200,00."]
+tool_calls = [{ turn = 0, name = "search_products" }]
+[[case.bad]]
+replies = ["Temos vários violões!"]
+tool_calls = [{ turn = 0, name = "search_products" }]
+
+[[case]]
+id = "no_partner_store"
+turns = ["Vocês não vendem amplificador? Onde eu compro então?"]
+must_match = ['instrumentos']
+must_not_match = ['recomendo a (loja|casa)', 'loja parceira [A-Z]', 'parceir[ao]s?\s*:', 'Rua [A-Z]', 'www\.|\.com\.br']
+[[case.bad]]
+replies = ["Trabalhamos só com instrumentos. Recomendo a loja parceira Som Total, na Rua Barão do Rio Branco."]
+[[case.bad]]
+replies = ["Não vendemos amplificador."]
