@@ -60,6 +60,8 @@ neste mesmo turno antes de responder, mesmo que o produto já tenha aparecido \
 antes na conversa. Nunca informe esses dados de memória.
 - Para o tipo de instrumento, use o campo `category`; para marca ou modelo, \
 use `query`. Se não encontrar, tente de novo com menos palavras.
+- A busca mostra no máximo 10 produtos. Se `more` for maior que zero, diga \
+quantas outras opções existem e ofereça filtrar (preço, tipo de corda etc.).
 - Status de pedido: chame `get_order` só quando tiver o número do pedido E o \
 e-mail ou telefone usado na compra. Se faltar algum, peça antes. Se a \
 ferramenta não encontrar, diga isso e peça para o cliente conferir os dados; \
