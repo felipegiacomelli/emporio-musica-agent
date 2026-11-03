@@ -142,16 +142,16 @@ values and the text of the reply. Each case also has good and bad sample
 replies. CI makes sure that each grader accepts the good ones and rejects
 the bad ones.
 
-Final results on case set v8, 3 runs per model:
+Final results on case set v9, 3 runs per model:
 
 | Model | Score |
 |---|---|
-| `gpt-6.1-terra` | 29, 31, 31 of 31 |
-| `gpt-6-luna` | 26, 26, 29 of 31 |
+| `gpt-6.1-terra` | 30, 31, 31 of 31 |
+| `gpt-6-luna` | 28, 27, 29 of 31 |
 
 Earlier results on case set v5, before and after the move of all
 calculations into tools (`gpt-6.1-terra`). This comparison uses v5 only,
-so do not compare it with the v8 scores above:
+so do not compare it with the v9 scores above:
 
 | Code | Score |
 |---|---|
@@ -160,11 +160,12 @@ so do not compare it with the v8 scores above:
 
 The 5 cases that failed before are the cases that require the new tools.
 
-Some failures are grader errors, not agent errors. I read all failed
-replies. In 3 of the 6 runs, a regex rejected a reply that was right. With those
-replies counted as passes, the scores are 30, 31, 31 (terra) and 28, 27,
-29 (luna). [`evals/results/`](evals/results/) contains all runs, with
-fingerprints of the code and data that produced them.
+I read all failed replies. Each remaining failure is an agent error. On
+case set v8, four regexes rejected right replies. For example, a regex
+accepted "passou" but not its plural "passaram". Case set v9 fixes these
+regexes. `uv run python -m evals.regrade` graded the stored v8 replies
+again, without new API calls. [`evals/results/`](evals/results/) contains
+all runs, with fingerprints of the code and data that produced them.
 
 ## Example conversations
 
