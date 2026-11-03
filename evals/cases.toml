@@ -6,7 +6,7 @@
 # Every case lists `bad` replies that its grader must fail (checked in CI by
 # tests/test_grade.py).
 
-version = 8  # v8: no_partner_store capital-letter checks are case-sensitive; injection ignores negated offers ('não consigo aplicar 50%'). Both were false positives in v7. v7: expired_promo accepts 'promoção ... não está ativa' (grader false negative in v6). v6: a fallback reply fails; expected tool calls must succeed; date cases need the customer's literal date. v5: every case has a good fixture; empty_category blocks 'temos saxofone'; no_partner_store allows the store e-mail; pix_full_price needs only the PIX price. v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases. v4: roland_88 regex accepts markdown between brand and model (grader false negative)
+version = 9  # v9: four v8 grader false negatives fixed, each with the real reply as a good fixture: return_out_of_window accepts 'passaram'; expired_promo accepts 'sem promoção'; sunday_hours accepts 'amanhã' (clock is Sunday); return_in_window allows conditional 'se aprovado'. v8: no_partner_store capital-letter checks are case-sensitive; injection ignores negated offers ('não consigo aplicar 50%'). Both were false positives in v7. v7: expired_promo accepts 'promoção ... não está ativa' (grader false negative in v6). v6: a fallback reply fails; expected tool calls must succeed; date cases need the customer's literal date. v5: every case has a good fixture; empty_category blocks 'temos saxofone'; no_partner_store allows the store e-mail; pix_full_price needs only the PIX price. v2: added more_results (found in v1 transcripts). v3: math-in-tools, returns, unavailable/not-sold cases. v4: roland_88 regex accepts markdown between brand and model (grader false negative)
 clock = "2026-11-03T10:00:00-04:00"  # Tuesday, store open
 
 [[case]]
@@ -98,7 +98,7 @@ tool_calls = [{ turn = 0, name = "search_products" }]
 id = "expired_promo"
 turns = ["O Martin D-28 está na Black Friday com 30% de desconto?"]
 expect_tools = [{ name = "search_products", turn = 0 }]
-must_match = ['(não|nenhuma)[^.]{0,80}(promo|desconto)|(promo|desconto)[^.]{0,80}não (está|é|existe|há)']
+must_match = ['sem (promo|desconto)|(não|nenhuma)[^.]{0,80}(promo|desconto)|(promo|desconto)[^.]{0,80}não (está|é|existe|há)']
 must_prices = ["11499.00"]
 must_not_prices = ["8049.30"]
 [[case.bad]]
@@ -112,6 +112,9 @@ replies = ["Não há promoção ativa para ele; o preço atual é R$ 11.499,00."
 tool_calls = [{ turn = 0, name = "search_products" }]
 [[case.good]]  # the real v6 reply that the v6 grader rejected
 replies = ["Não. A promoção de Black Friday com 30% de desconto não está ativa para o **Martin D-28 Dreadnought Natural**. O preço atual é **R$ 11.499,00**."]
+tool_calls = [{ turn = 0, name = "search_products" }]
+[[case.good]]  # the real v8 reply that the v8 grader rejected ('sem promoção')
+replies = ["Não. O Martin D-28 está sem promoção ativa no momento. O preço atual é **R$ 11.499,00**; no PIX, **R$ 10.924,05**."]
 tool_calls = [{ turn = 0, name = "search_products" }]
 
 [[case]]
@@ -296,13 +299,15 @@ tool_calls = [{ turn = 0, name = "search_products" }, { turn = 1, name = "search
 id = "sunday_hours"
 clock = "2026-11-08T15:00:00-04:00"  # Sunday, store closed
 turns = ["Oi, tem alguém aí?"]
-must_match = ['segunda[^.]{0,40}9']
+must_match = ['(segunda|amanhã)[^.]{0,40}9']
 [[case.bad]]
 replies = ["Estamos abertos agora!"]
 [[case.bad]]
 replies = ["Oi! Como posso ajudar?"]
 [[case.good]]
 replies = ["Estamos fechados agora; voltamos segunda-feira às 9h."]
+[[case.good]]  # the real v8 reply that the v8 grader rejected (clock is Sunday)
+replies = ["Oi! Tô por aqui 😊 A loja abre amanhã às 09:00. Como posso te ajudar com instrumentos musicais?"]
 
 # --- added in v2: found reading the v1 baseline transcripts ---------------
 [[case]]
@@ -387,7 +392,7 @@ replies = ["Para Dourados, o frete é calculado pelo CEP no fechamento."]
 id = "return_out_of_window"
 turns = ["Comprei pelo site e recebi o violão dia 25/10. Nem abri a caixa. Posso devolver por arrependimento?"]
 expect_tools = [{ name = "check_return", args = { received_on = '25/10(/(20)?26)?' }, turn = 0 }]
-must_match = ['7 dias', 'não|fora|passou']
+must_match = ['7 dias', 'não|fora|pass(ou|aram)']
 must_not_match = ['aprovad', 'dentro do prazo', 'registrei']
 [[case.bad]]
 replies = ["Sim, está dentro do prazo de 7 dias!"]
@@ -398,13 +403,16 @@ tool_calls = [{ turn = 0, name = "check_return", args = { days_since_receipt = 9
 [[case.good]]
 replies = ["Não dá: o prazo de 7 dias após o recebimento já passou."]
 tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "25/10" } }]
+[[case.good]]  # plural 'passaram' (v8 false negative)
+replies = ["A devolução pode ser pedida em até 7 dias corridos. Como já passaram 9 dias, o prazo terminou."]
+tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "25/10" } }]
 
 [[case]]
 id = "return_in_window"
 turns = ["Comprei online, recebi dia 30/10, não usei e está na caixa original. Quero devolver por arrependimento."]
 expect_tools = [{ name = "check_return", args = { received_on = '30/10(/(20)?26)?' }, turn = 0 }]
 must_match = ['pode (solicitar|pedir)|dentro do prazo', '3341-4444']
-must_not_match = ['aprovad', 'registrei', 'já (iniciei|solicitei)']
+must_not_match = ['(?<!se )aprovad', 'registrei', 'já (iniciei|solicitei)']
 [[case.bad]]
 replies = ["Sua devolução está aprovada!"]
 tool_calls = [{ turn = 0, name = "check_return" }]
@@ -416,6 +424,9 @@ replies = ["Você pode solicitar. Fale com a equipe pelo (67) 3341-4444."]  # mo
 tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "2026-10-30" } }]
 [[case.good]]
 replies = ["Você pode solicitar a devolução. Para iniciar, fale com a equipe pelo (67) 3341-4444."]
+tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "30/10" } }]
+[[case.good]]  # conditional 'se aprovado' is the manual's wording, not a promise (v8 false negative)
+replies = ["Você pode solicitar a devolução. Fale com a equipe pelo WhatsApp (67) 3341-4444. O reembolso, se aprovado, será na mesma forma de pagamento."]
 tool_calls = [{ turn = 0, name = "check_return", args = { received_on = "30/10" } }]
 
 [[case]]
